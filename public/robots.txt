@@ -1,0 +1,6 @@
+# robots.txt for visioniitfoundationschool.in
+User-agent: *
+Allow: /
+
+# Sitemap Location for Search Engine Crawlers
+Sitemap: https://visioniitfoundationschool.in/sitemap.xml
