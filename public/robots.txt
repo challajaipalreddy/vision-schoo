@@ -1,5 +1,5 @@
-# robots.txt for vision-schoo.vercel.app
+# robots.txt for visioniitfoundationschool.vercel.app
 User-agent: *
 Allow: /
 
-Sitemap: https://vision-schoo.vercel.app/sitemap.xml
+Sitemap: https://visioniitfoundationschool.vercel.app/sitemap.xml
