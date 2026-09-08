@@ -1,6 +1,5 @@
-# robots.txt for visioniitfoundationschool.in
+# robots.txt for vision-schoo.vercel.app
 User-agent: *
 Allow: /
 
-# Sitemap Location for Search Engine Crawlers
-Sitemap: https://visioniitfoundationschool.in/sitemap.xml
+Sitemap: https://vision-schoo.vercel.app/sitemap.xml
