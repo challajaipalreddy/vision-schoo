@@ -19,6 +19,7 @@ import AdminPortal from './components/AdminPortal';
 import SearchModal from './components/SearchModal';
 import QuickInquiryModal from './components/QuickInquiryModal';
 import FloatingActionBar from './components/FloatingActionBar';
+import VideoIntroOverlay from './components/VideoIntroOverlay';
 
 const getStoredData = (key, defaultValue) => {
   try {
@@ -30,6 +31,7 @@ const getStoredData = (key, defaultValue) => {
 };
 
 export default function App() {
+  const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [heroSlides, setHeroSlides] = useState(() => getStoredData('vision_hero_slides', initialSchoolData.heroSlides));
   const [notices, setNotices] = useState(() => getStoredData('vision_notices', initialSchoolData.notices));
   const [gallery, setGallery] = useState(() => getStoredData('vision_gallery', initialSchoolData.gallery));
@@ -236,6 +238,11 @@ const setStoredData = (key, value) => {
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans antialiased selection:bg-amber-400 selection:text-slate-950">
       
+      {/* Fullscreen Cinematic School Intro Video */}
+      {showIntroVideo && (
+        <VideoIntroOverlay onComplete={() => setShowIntroVideo(false)} />
+      )}
+
       {/* Navigation Header */}
       <Navbar
         onOpenSearch={() => setSearchOpen(true)}
