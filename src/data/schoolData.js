@@ -12,7 +12,7 @@ export const initialSchoolData = {
       id: 1,
       image: "/slide1.jpg",
       fallbackUrl: "https://lh3.googleusercontent.com/grass-cs/ACvplmMaZMQqEib0MzvzAz2_vE0s37de_ZRc0WLEOEAF-9_88EqIkLz1npPsPNChJLMedVy89s7h0vvSp0HmyyZWr9cNUqWMre0z4xUFIodH3puK_F5dm0AQSlP2ktcUPfua4dBY3K-VRQ=s1360-w1360-h1020-rw",
-      title: "Welcome to Vision I.I.T. Foundation School",
+      title: "Welcome to Vision I.I.T. Foundation School Sattenapalle",
       subtitle: "Nurturing Academic Excellence & Early IIT-JEE / NEET Competitive Advantage",
       tag: "ESTABLISHED 2001 • STATE & IIT FOUNDATION WING"
     },
@@ -23,14 +23,6 @@ export const initialSchoolData = {
       title: "Empowering Students for Bright Futures",
       subtitle: "Personalized Student Mentorship, Interactive Classrooms & Practical Mastery",
       tag: "EXPERIENCED IIT-JEE FACULTY & MENTORS"
-    },
-    {
-      id: 3,
-      image: "/slide3.jpg",
-      fallbackUrl: "https://lh3.googleusercontent.com/grass-cs/ACvplmN_0DrDl2LVd1vasoJHwxQ0gKX6adjoeOuB8WAUpXoFGkBIACISCIIEs8II55ms25cVeu6h3i7M0-7jS3u23aXINRW-pcGWNYZV6ZpMm4Xqa-Av-5eJUJ1IjmhhRIUHHRJGo5YhcQ=s1360-w1360-h1020-rw",
-      title: "100% 10th Board Pass Rate & Top Ranks",
-      subtitle: "Consistently Producing 10/10 GPA Achievers & National Olympiad Winners",
-      tag: "PROVEN HISTORICAL RESULTS"
     }
   ],
   
