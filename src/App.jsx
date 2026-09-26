@@ -53,16 +53,24 @@ export default function App() {
     return false;
   });
 
-  // Sync state changes with localStorage
-  useEffect(() => { localStorage.setItem('vision_hero_slides', JSON.stringify(heroSlides)); }, [heroSlides]);
-  useEffect(() => { localStorage.setItem('vision_notices', JSON.stringify(notices)); }, [notices]);
-  useEffect(() => { localStorage.setItem('vision_gallery', JSON.stringify(gallery)); }, [gallery]);
-  useEffect(() => { localStorage.setItem('vision_videos', JSON.stringify(videos)); }, [videos]);
-  useEffect(() => { localStorage.setItem('vision_faculty', JSON.stringify(faculty)); }, [faculty]);
-  useEffect(() => { localStorage.setItem('vision_testimonials', JSON.stringify(testimonials)); }, [testimonials]);
-  useEffect(() => { localStorage.setItem('vision_results_history', JSON.stringify(resultsHistory)); }, [resultsHistory]);
-  useEffect(() => { localStorage.setItem('vision_head_of_school', JSON.stringify(headOfSchool)); }, [headOfSchool]);
-  useEffect(() => { localStorage.setItem('vision_inquiries', JSON.stringify(inquiries)); }, [inquiries]);
+const setStoredData = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn(`LocalStorage save warning for ${key}:`, err);
+  }
+};
+
+  // Sync state changes with localStorage safely
+  useEffect(() => { setStoredData('vision_hero_slides', heroSlides); }, [heroSlides]);
+  useEffect(() => { setStoredData('vision_notices', notices); }, [notices]);
+  useEffect(() => { setStoredData('vision_gallery', gallery); }, [gallery]);
+  useEffect(() => { setStoredData('vision_videos', videos); }, [videos]);
+  useEffect(() => { setStoredData('vision_faculty', faculty); }, [faculty]);
+  useEffect(() => { setStoredData('vision_testimonials', testimonials); }, [testimonials]);
+  useEffect(() => { setStoredData('vision_results_history', resultsHistory); }, [resultsHistory]);
+  useEffect(() => { setStoredData('vision_head_of_school', headOfSchool); }, [headOfSchool]);
+  useEffect(() => { setStoredData('vision_inquiries', inquiries); }, [inquiries]);
 
   // Sync Admin Portal open state with URL hash & browser refresh
   useEffect(() => {

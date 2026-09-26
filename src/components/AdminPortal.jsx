@@ -176,23 +176,70 @@ export default function AdminPortal({
     setRegForm({ name: '', masterKey: '', passcode: '', confirmPasscode: '' });
   };
 
-  // Generic File Upload Handler (DataURL for mobile photos)
+  // Generic File Upload Handler (Auto-compress mobile/PC photos)
   const handleFileUpload = (e, setTarget) => {
-    const file = e.target.files[0];
-    if (file) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.type.startsWith('video/')) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setTarget(reader.result);
-      };
+      reader.onloadend = () => setTarget(reader.result);
       reader.readAsDataURL(file);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        setTarget(compressedDataUrl);
+      };
+      img.onerror = () => {
+        setTarget(event.target.result);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   // Action Handlers
   const handleCreateSlide = (e) => {
     e.preventDefault();
-    if (!newSlide.image || !newSlide.title) return;
-    onAddHeroSlide({ id: Date.now(), ...newSlide });
+    if (!newSlide.title) {
+      alert('Please enter a headline for the slide.');
+      return;
+    }
+    if (!newSlide.image) {
+      alert('Please select a photo for the slide.');
+      return;
+    }
+    onAddHeroSlide({
+      id: Date.now(),
+      title: newSlide.title,
+      subtitle: newSlide.subtitle || 'Vision I.I.T. Foundation School Sattenapalle',
+      tag: newSlide.tag || 'IIT FOUNDATION',
+      image: newSlide.image
+    });
     setNewSlide({ title: '', subtitle: '', tag: 'IIT FOUNDATION', image: '' });
     alert('Top Home Banner slide added!');
   };
