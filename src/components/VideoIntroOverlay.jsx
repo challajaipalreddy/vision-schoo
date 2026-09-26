@@ -8,31 +8,39 @@ export default function VideoIntroOverlay({ onComplete }) {
     const video = videoRef.current;
     if (!video) return;
 
-    // Play video with audio enabled
+    // Force unmuted audio state
     video.muted = false;
-    
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Fallback for strict browser audio autoplay policies:
-        // Start muted if blocked, then unmute on first user interaction (touch/click/scroll)
+
+    // Attempt unmuted play immediately
+    const startAudioVideo = () => {
+      video.play().catch((err) => {
+        console.log("Browser policy blocked direct audio autoplay, listening for mouse/touch movement:", err);
+        // Start playing video
         video.muted = true;
         video.play();
 
-        const enableAudioOnInteraction = () => {
+        // Immediately unmute & play audio on ANY mouse move, touch, key, or scroll
+        const enableAudio = () => {
           if (video) {
             video.muted = false;
+            video.play();
           }
-          window.removeEventListener('click', enableAudioOnInteraction);
-          window.removeEventListener('touchstart', enableAudioOnInteraction);
-          window.removeEventListener('keydown', enableAudioOnInteraction);
+          window.removeEventListener('pointermove', enableAudio);
+          window.removeEventListener('pointerdown', enableAudio);
+          window.removeEventListener('touchstart', enableAudio);
+          window.removeEventListener('scroll', enableAudio);
+          window.removeEventListener('keydown', enableAudio);
         };
 
-        window.addEventListener('click', enableAudioOnInteraction, { once: true });
-        window.addEventListener('touchstart', enableAudioOnInteraction, { once: true });
-        window.addEventListener('keydown', enableAudioOnInteraction, { once: true });
+        window.addEventListener('pointermove', enableAudio, { once: true });
+        window.addEventListener('pointerdown', enableAudio, { once: true });
+        window.addEventListener('touchstart', enableAudio, { once: true });
+        window.addEventListener('scroll', enableAudio, { once: true });
+        window.addEventListener('keydown', enableAudio, { once: true });
       });
-    }
+    };
+
+    startAudioVideo();
   }, []);
 
   const handleVideoEnded = () => {
@@ -46,7 +54,6 @@ export default function VideoIntroOverlay({ onComplete }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black text-white flex items-center justify-center overflow-hidden font-sans select-none">
-      {/* Pure Fullscreen Video with Sound & Zero Overlays/Bars */}
       <video
         ref={videoRef}
         src="/school_intro.mp4"
