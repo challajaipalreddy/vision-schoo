@@ -64,7 +64,11 @@ export default function AdminPortal({
   onDeleteNotice,
   inquiries,
   headOfSchool,
-  onUpdateHeadOfSchool
+  onUpdateHeadOfSchool,
+  isCloudSyncing,
+  lastSyncTime,
+  onManualPushCloud,
+  onManualPullCloud
 }) {
   const [pin, setPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -332,13 +336,32 @@ export default function AdminPortal({
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2 rounded-lg shadow uppercase flex items-center gap-1.5"
-        >
-          <span>View Live Website</span>
-          <ExternalLink className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 bg-blue-900/80 px-3 py-1.5 rounded-lg border border-blue-700/50 text-xs">
+            <span className={`w-2.5 h-2.5 rounded-full ${isCloudSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}></span>
+            <span className="font-medium text-slate-200">
+              {isCloudSyncing ? 'Syncing to Mobile...' : lastSyncTime ? `Cloud Synced (${lastSyncTime})` : 'Cloud Active'}
+            </span>
+          </div>
+
+          <button
+            onClick={() => onManualPushCloud && onManualPushCloud()}
+            disabled={isCloudSyncing}
+            className="bg-blue-800 hover:bg-blue-700 text-white font-bold text-xs px-3 py-2 rounded-lg border border-blue-600 transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+            title="Force push all laptop changes to mobile phones immediately"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Sync Cloud ☁️</span>
+          </button>
+
+          <button
+            onClick={onClose}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2 rounded-lg shadow uppercase flex items-center gap-1.5"
+          >
+            <span>View Live Website</span>
+            <ExternalLink className="w-4 h-4" />
+          </button>
+        </div>
       </header>
 
       {/* Auth Screen */}

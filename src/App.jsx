@@ -30,6 +30,17 @@ const getStoredData = (key, defaultValue) => {
   }
 };
 
+const setStoredData = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn(`LocalStorage save warning for ${key}:`, err);
+  }
+};
+
+const CLOUD_OBJECT_ID = 'ff808181a09d98f701a0dcb342a01aa6';
+const CLOUD_API_URL = `https://api.restful-api.dev/objects/${CLOUD_OBJECT_ID}`;
+
 export default function App() {
   const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [heroSlides, setHeroSlides] = useState(() => getStoredData('vision_hero_slides', initialSchoolData.heroSlides));
@@ -44,6 +55,9 @@ export default function App() {
     { id: 101, parentName: 'K. Somasekhar', phone: '9848012345', studentName: 'K. Sai Charan', targetClass: 'Class 8 (IIT Foundation Batch)', date: 'Sep 06, 2026', message: 'Interested in IIT foundation entrance exam.' }
   ]));
 
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [inquiryModalOpen, setInquiryModalOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => {
@@ -55,14 +69,6 @@ export default function App() {
     return false;
   });
 
-const setStoredData = (key, value) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    console.warn(`LocalStorage save warning for ${key}:`, err);
-  }
-};
-
   // Sync state changes with localStorage safely
   useEffect(() => { setStoredData('vision_hero_slides', heroSlides); }, [heroSlides]);
   useEffect(() => { setStoredData('vision_notices', notices); }, [notices]);
@@ -73,6 +79,89 @@ const setStoredData = (key, value) => {
   useEffect(() => { setStoredData('vision_results_history', resultsHistory); }, [resultsHistory]);
   useEffect(() => { setStoredData('vision_head_of_school', headOfSchool); }, [headOfSchool]);
   useEffect(() => { setStoredData('vision_inquiries', inquiries); }, [inquiries]);
+
+  // Push complete current state to Cloud Store
+  const pushToCloud = async (overrides = {}) => {
+    setIsCloudSyncing(true);
+    try {
+      const payloadData = {
+        heroSlides: overrides.heroSlides || heroSlides,
+        notices: overrides.notices || notices,
+        gallery: overrides.gallery || gallery,
+        videos: overrides.videos || videos,
+        faculty: overrides.faculty || faculty,
+        testimonials: overrides.testimonials || testimonials,
+        resultsHistory: overrides.resultsHistory || resultsHistory,
+        headOfSchool: overrides.headOfSchool || headOfSchool,
+        updatedAt: Date.now()
+      };
+
+      await fetch(CLOUD_API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Vision School Store', data: payloadData })
+      });
+      setLastSyncTime(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.warn('Cloud push sync error:', err);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  // Pull latest data from Cloud Store on mount and poll periodically
+  const pullFromCloud = async () => {
+    try {
+      const res = await fetch(CLOUD_API_URL);
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json && json.data) {
+        const d = json.data;
+        if (d.heroSlides && Array.isArray(d.heroSlides) && d.heroSlides.length > 0) {
+          setHeroSlides(d.heroSlides);
+          setStoredData('vision_hero_slides', d.heroSlides);
+        }
+        if (d.notices && Array.isArray(d.notices) && d.notices.length > 0) {
+          setNotices(d.notices);
+          setStoredData('vision_notices', d.notices);
+        }
+        if (d.gallery && Array.isArray(d.gallery) && d.gallery.length > 0) {
+          setGallery(d.gallery);
+          setStoredData('vision_gallery', d.gallery);
+        }
+        if (d.videos && Array.isArray(d.videos) && d.videos.length > 0) {
+          setVideos(d.videos);
+          setStoredData('vision_videos', d.videos);
+        }
+        if (d.faculty && Array.isArray(d.faculty) && d.faculty.length > 0) {
+          setFaculty(d.faculty);
+          setStoredData('vision_faculty', d.faculty);
+        }
+        if (d.testimonials && Array.isArray(d.testimonials) && d.testimonials.length > 0) {
+          setTestimonials(d.testimonials);
+          setStoredData('vision_testimonials', d.testimonials);
+        }
+        if (d.resultsHistory && typeof d.resultsHistory === 'object' && Object.keys(d.resultsHistory).length > 0) {
+          setResultsHistory(d.resultsHistory);
+          setStoredData('vision_results_history', d.resultsHistory);
+        }
+        if (d.headOfSchool && typeof d.headOfSchool === 'object' && d.headOfSchool.name) {
+          setHeadOfSchool(d.headOfSchool);
+          setStoredData('vision_head_of_school', d.headOfSchool);
+        }
+        setLastSyncTime(new Date().toLocaleTimeString());
+      }
+    } catch (err) {
+      console.warn('Cloud pull sync error:', err);
+    }
+  };
+
+  // Initial cloud fetch and 15-second polling loop
+  useEffect(() => {
+    pullFromCloud();
+    const interval = setInterval(pullFromCloud, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync Admin Portal open state with URL hash & browser refresh
   useEffect(() => {
@@ -109,7 +198,9 @@ const setStoredData = (key, value) => {
 
   // Handlers for Hero Slides
   const handleAddHeroSlide = (slide) => {
-    setHeroSlides([...heroSlides, slide]);
+    const updated = [...heroSlides, slide];
+    setHeroSlides(updated);
+    pushToCloud({ heroSlides: updated });
   };
 
   const handleRotateHeroSlides = () => {
@@ -118,51 +209,70 @@ const setStoredData = (key, value) => {
     const first = rotated.shift();
     rotated.push(first);
     setHeroSlides(rotated);
+    pushToCloud({ heroSlides: rotated });
   };
 
   const handleDeleteHeroSlide = (id) => {
-    setHeroSlides(heroSlides.filter(s => s.id !== id));
+    const updated = heroSlides.filter(s => s.id !== id);
+    setHeroSlides(updated);
+    pushToCloud({ heroSlides: updated });
   };
 
   // Handlers for Faculty & Testimonials
   const handleAddFaculty = (member) => {
-    setFaculty([member, ...faculty]);
+    const updated = [member, ...faculty];
+    setFaculty(updated);
+    pushToCloud({ faculty: updated });
   };
 
   const handleDeleteFaculty = (identifier) => {
-    setFaculty(faculty.filter(f => f.id !== identifier && f.name !== identifier));
+    const updated = faculty.filter(f => f.id !== identifier && f.name !== identifier);
+    setFaculty(updated);
+    pushToCloud({ faculty: updated });
   };
 
   const handleAddTestimonial = (item) => {
-    setTestimonials([item, ...testimonials]);
+    const updated = [item, ...testimonials];
+    setTestimonials(updated);
+    pushToCloud({ testimonials: updated });
   };
 
   const handleDeleteTestimonial = (identifier) => {
-    setTestimonials(testimonials.filter(t => t.id !== identifier && t.name !== identifier));
+    const updated = testimonials.filter(t => t.id !== identifier && t.name !== identifier);
+    setTestimonials(updated);
+    pushToCloud({ testimonials: updated });
   };
 
   // Handlers for Gallery & Videos
   const handleAddGalleryItem = (item) => {
-    setGallery([item, ...gallery]);
+    const updated = [item, ...gallery];
+    setGallery(updated);
+    pushToCloud({ gallery: updated });
   };
 
   const handleDeleteGalleryItem = (id) => {
-    setGallery(gallery.filter(g => g.id !== id));
+    const updated = gallery.filter(g => g.id !== id);
+    setGallery(updated);
+    pushToCloud({ gallery: updated });
   };
 
   const handleAddVideo = (video) => {
-    setVideos([video, ...videos]);
+    const updated = [video, ...videos];
+    setVideos(updated);
+    pushToCloud({ videos: updated });
   };
 
   const handleDeleteVideo = (id) => {
-    setVideos(videos.filter(v => v.id !== id));
+    const updated = videos.filter(v => v.id !== id);
+    setVideos(updated);
+    pushToCloud({ videos: updated });
   };
 
   // Handlers for 10th Board Toppers
   const handleAddTopper = (year, topper) => {
     setResultsHistory(prev => {
       const yearObj = prev[year] || { passRate: "100%", topGpaCount: 1, distinctionRate: "90%", schoolAverage: "9.2 / 10", toppers: [] };
-      return {
+      const updated = {
         ...prev,
         [year]: {
           ...yearObj,
@@ -170,13 +280,15 @@ const setStoredData = (key, value) => {
           toppers: [topper, ...yearObj.toppers]
         }
       };
+      pushToCloud({ resultsHistory: updated });
+      return updated;
     });
   };
 
   const handleBulkAddToppers = (year, newToppersArray) => {
     setResultsHistory(prev => {
       const yearObj = prev[year] || { passRate: "100%", topGpaCount: 0, distinctionRate: "90%", schoolAverage: "9.2 / 10", toppers: [] };
-      return {
+      const updated = {
         ...prev,
         [year]: {
           ...yearObj,
@@ -184,6 +296,8 @@ const setStoredData = (key, value) => {
           toppers: [...newToppersArray, ...yearObj.toppers]
         }
       };
+      pushToCloud({ resultsHistory: updated });
+      return updated;
     });
   };
 
@@ -194,13 +308,15 @@ const setStoredData = (key, value) => {
       const rotatedToppers = [...yearObj.toppers];
       const first = rotatedToppers.shift();
       rotatedToppers.push(first);
-      return {
+      const updated = {
         ...prev,
         [year]: {
           ...yearObj,
           toppers: rotatedToppers
         }
       };
+      pushToCloud({ resultsHistory: updated });
+      return updated;
     });
   };
 
@@ -208,23 +324,29 @@ const setStoredData = (key, value) => {
     setResultsHistory(prev => {
       const yearObj = prev[year];
       if (!yearObj) return prev;
-      return {
+      const updated = {
         ...prev,
         [year]: {
           ...yearObj,
           toppers: yearObj.toppers.filter(t => t.id !== id)
         }
       };
+      pushToCloud({ resultsHistory: updated });
+      return updated;
     });
   };
 
   // Handlers for Notices & Inquiries
   const handleAddNotice = (newNotice) => {
-    setNotices([newNotice, ...notices]);
+    const updated = [newNotice, ...notices];
+    setNotices(updated);
+    pushToCloud({ notices: updated });
   };
 
   const handleDeleteNotice = (id) => {
-    setNotices(notices.filter(n => n.id !== id));
+    const updated = notices.filter(n => n.id !== id);
+    setNotices(updated);
+    pushToCloud({ notices: updated });
   };
 
   const handleAddInquiry = (inquiry) => {
@@ -233,6 +355,7 @@ const setStoredData = (key, value) => {
 
   const handleUpdateHeadOfSchool = (updatedHead) => {
     setHeadOfSchool(updatedHead);
+    pushToCloud({ headOfSchool: updatedHead });
   };
 
   return (
@@ -323,6 +446,10 @@ const setStoredData = (key, value) => {
         inquiries={inquiries}
         headOfSchool={headOfSchool}
         onUpdateHeadOfSchool={handleUpdateHeadOfSchool}
+        isCloudSyncing={isCloudSyncing}
+        lastSyncTime={lastSyncTime}
+        onManualPushCloud={pushToCloud}
+        onManualPullCloud={pullFromCloud}
       />
 
       {/* Global Search Overlay */}
