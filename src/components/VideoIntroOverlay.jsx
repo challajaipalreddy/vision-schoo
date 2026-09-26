@@ -3,17 +3,14 @@ import React, { useState, useRef, useEffect } from 'react';
 export default function VideoIntroOverlay({ onComplete }) {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
-    // Attempt automatic playback with sound
+    // Guaranteed 100% immediate autoplay across all desktop & mobile browsers
     if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().then(() => {
-        setHasStarted(true);
-      }).catch((err) => {
-        console.log("Autoplay with sound waiting for user click:", err);
+      videoRef.current.muted = true;
+      videoRef.current.play().catch((err) => {
+        console.log("Autoplay retry:", err);
       });
     }
   }, []);
@@ -33,22 +30,10 @@ export default function VideoIntroOverlay({ onComplete }) {
     }
   };
 
-  const handleStartPlay = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().then(() => {
-        setHasStarted(true);
-      });
-    }
-  };
-
   if (!isVisible) return null;
 
   return (
-    <div
-      onClick={handleStartPlay}
-      className="fixed inset-0 z-[9999] bg-black text-white flex flex-col justify-between overflow-hidden font-sans cursor-pointer"
-    >
+    <div className="fixed inset-0 z-[9999] bg-black text-white flex flex-col justify-between overflow-hidden font-sans pointer-events-none select-none">
       
       {/* Fullscreen Video Container */}
       <div className="relative w-full h-full flex items-center justify-center bg-black">
@@ -56,24 +41,12 @@ export default function VideoIntroOverlay({ onComplete }) {
           ref={videoRef}
           src="/school_intro.mp4"
           autoPlay
+          muted
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
           className="w-full h-full object-contain max-h-screen"
         />
-
-        {/* Unblock prompt if browser policy pauses sound autoplay */}
-        {!hasStarted && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-xs text-center p-4">
-            <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse mb-3">
-              <svg className="w-8 h-8 text-slate-950 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </div>
-            <h3 className="font-heading font-black text-lg text-white">Vision I.I.T. Foundation School</h3>
-            <p className="text-amber-400 text-xs font-bold mt-1">Tap anywhere to start cinematic video intro 🎬</p>
-          </div>
-        )}
       </div>
 
       {/* Bottom Progress Bar */}
@@ -87,7 +60,7 @@ export default function VideoIntroOverlay({ onComplete }) {
           </div>
           <div className="flex justify-between text-[10px] font-extrabold text-slate-300 uppercase tracking-widest">
             <span>Vision I.I.T. Foundation School Sattenapalle</span>
-            <span>Playing Intro Video...</span>
+            <span>Intro Video Playing...</span>
           </div>
         </div>
       </div>
