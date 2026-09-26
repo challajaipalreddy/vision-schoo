@@ -2,29 +2,47 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export default function VideoIntroOverlay({ onComplete }) {
   const [isVisible, setIsVisible] = useState(true);
-  const [progress, setProgress] = useState(0);
   const videoRef = useRef(null);
 
   useEffect(() => {
-    // 1. Trigger autoplay with muted fallback for mobile/iOS/Android compatibility
-    const playVideo = async () => {
+    // Enable sound and play video automatically
+    const startAudioVideo = async () => {
       if (videoRef.current) {
-        videoRef.current.muted = true;
+        videoRef.current.muted = false; // Enable audio / sound out loud
         try {
           await videoRef.current.play();
         } catch (err) {
-          console.log("Autoplay error, retrying on user click:", err);
+          // If browser policy blocks unmuted autoplay before user click, fallback to muted then unmute
+          console.log("Unmuted autoplay restricted, attempting playback:", err);
+          videoRef.current.muted = true;
+          await videoRef.current.play().catch(() => {});
         }
       }
     };
-    playVideo();
 
-    // 2. Safety timeout (14 seconds): Ensure visitors are never stuck on a black screen
+    startAudioVideo();
+
+    // Global listener: First user tap/click on screen immediately unmutes and plays audio
+    const handleGlobalInteraction = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener('click', handleGlobalInteraction, { once: true });
+    window.addEventListener('touchstart', handleGlobalInteraction, { once: true });
+
+    // Safety timeout: Ensure site opens even on slow network connections
     const safetyTimer = setTimeout(() => {
       finishIntro();
-    }, 14000);
+    }, 15000);
 
-    return () => clearTimeout(safetyTimer);
+    return () => {
+      clearTimeout(safetyTimer);
+      window.removeEventListener('click', handleGlobalInteraction);
+      window.removeEventListener('touchstart', handleGlobalInteraction);
+    };
   }, []);
 
   const finishIntro = () => {
@@ -34,17 +52,12 @@ export default function VideoIntroOverlay({ onComplete }) {
     }
   };
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current && videoRef.current.duration) {
-      const current = videoRef.current.currentTime;
-      const total = videoRef.current.duration;
-      setProgress((current / total) * 100);
-    }
-  };
-
-  const handleContainerClick = () => {
-    if (videoRef.current && videoRef.current.paused) {
-      videoRef.current.play().catch(() => {});
+  const handleScreenClick = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+      }
     }
   };
 
@@ -52,42 +65,20 @@ export default function VideoIntroOverlay({ onComplete }) {
 
   return (
     <div
-      onClick={handleContainerClick}
-      className="fixed inset-0 z-[9999] bg-black text-white flex flex-col justify-between overflow-hidden font-sans cursor-pointer select-none transition-opacity duration-500"
+      onClick={handleScreenClick}
+      className="fixed inset-0 z-[9999] bg-black text-white flex items-center justify-center overflow-hidden cursor-pointer select-none transition-opacity duration-500"
     >
-      
-      {/* Fullscreen Video Container */}
-      <div className="relative w-full h-full flex items-center justify-center bg-black">
-        <video
-          ref={videoRef}
-          src="/school_intro.mp4"
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={finishIntro}
-          onError={finishIntro}
-          className="w-full h-full object-contain max-h-screen"
-        />
-      </div>
-
-      {/* Bottom Progress Bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black via-black/40 to-transparent p-4">
-        <div className="max-w-4xl mx-auto space-y-1.5">
-          <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 h-full transition-all duration-200"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] font-extrabold text-slate-300 uppercase tracking-widest">
-            <span>Vision I.I.T. Foundation School Sattenapalle</span>
-            <span>Intro Video Playing...</span>
-          </div>
-        </div>
-      </div>
-
+      {/* Clean Fullscreen Video without any bars, text, or overlay elements */}
+      <video
+        ref={videoRef}
+        src="/school_intro.mp4"
+        autoPlay
+        playsInline
+        preload="auto"
+        onEnded={finishIntro}
+        onError={finishIntro}
+        className="w-full h-full object-contain max-h-screen"
+      />
     </div>
   );
 }
